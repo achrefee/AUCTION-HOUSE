@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BidEk - Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1a1a2e;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        .card {
+            backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            padding: 40px;
+            width: 350px;
+            text-align: center;
+        }
+        .form-control {
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            border-radius: 10px;
+        }
+        .form-control:focus {
+            background-color: rgba(255, 255, 255, 0.3);
+            box-shadow: none;
+            color: #fff;
+        }
+        .btn-custom {
+            background-color: #00b4d8;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            transition: background-color 0.3s;
+        }
+        .btn-custom:hover {
+            background-color: #0077b6;
+        }
+        a {
+            color: #00b4d8;
+            text-decoration: none;
+        }
+        a:hover {
+            color: #0077b6;
+            text-decoration: underline;
+        }
+        h2, p {
+            color: #ffffff
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Welcome Back to BidEk</h2>
+        <p>Login to your account</p>
+        <form id="loginForm">
+            <div class="mb-3">
+                <input type="email" class="form-control" placeholder="Email" name="email" required>
+            </div>
+            <div class="mb-3">
+                <input type="password" class="form-control" placeholder="Password" name="password" required>
+            </div>
+            <button type="submit" class="btn btn-custom w-100">Login</button>
+            <p class="mt-3">Don't have an account? <a href="/register">Register here</a></p>
+        </form>
+        <script>
+            document.getElementById('loginForm').addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                const form = e.target;
+                const data = {
+                    email: form.email.value,
+                    password: form.password.value
+                };
+
+                try {
+                    const response = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        localStorage.setItem('token', result.token);
+                        document.cookie = "token=" + result.token + "; path=/";
+                        window.location.href = '/home'; // Redirect to secured Thymeleaf view
+                    } else {
+                        const errorText = await response.text();
+                        alert('Login failed: ' + errorText);
+                    }
+
+                } catch (error) {
+                    alert('Network error');
+                }
+            });
+        </script>
+    </div>
+</body>
+</html>

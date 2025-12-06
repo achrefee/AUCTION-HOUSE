@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BidEk - Home</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1a1a2e;
+            color: #ffffff;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .navbar {
+            background-color: #16213e;
+        }
+        .navbar-brand, .nav-link, .dropdown-toggle {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover, .dropdown-item:hover {
+            color: #00b4d8 !important;
+        }
+        .container {
+            margin-top: 30px;
+        }
+        .card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            margin-bottom: 30px;
+        }
+        .btn-custom {
+            background-color: #00b4d8;
+            color: white;
+            border-radius: 25px;
+            border: none;
+        }
+        .btn-custom:hover {
+            background-color: #0077b6;
+        }
+        .card-title {
+            font-weight: bold;
+        }
+        .search-bar {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg px-4">
+    <a class="navbar-brand" href="/home">BidEk</a>
+    <div class="collapse navbar-collapse justify-content-end">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" href="/create">Create Post</a>
+            </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown">Profile</a>
+                <ul class="dropdown-menu dropdown-menu-dark">
+                    <li><a class="dropdown-item" href="/my-posts">My Posts</a></li>
+                    <li><a class="dropdown-item" href="/my-bids">My Bids</a></li>
+                    <li><a class="dropdown-item" href="/account">My Account</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="/logout">Logout</a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="container">
+    <input type="text" id="searchInput" class="form-control search-bar" placeholder="Search posts by title...">
+    <div class="row" id="postContainer"></div>
+</div>
+
+<!-- Bid Modal -->
+<div class="modal fade" id="bidModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title">Place a Bid</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="number" min="0" step="0.01" class="form-control" id="bidAmount" placeholder="Enter your bid">
+                <input type="hidden" id="currentPostId">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-custom" onclick="submitBid()">Submit Bid</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+    let allPosts = [];
+
+    async function loadPosts() {
+        const res = await fetch('/api/posts', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        allPosts = await res.json();
+        renderPosts(allPosts);
+    }
+
+    function renderPosts(posts) {
+    const container = document.getElementById("postContainer");
+    container.innerHTML = "";
+
+    posts.forEach(post => {
+        const col = document.createElement("div");
+        col.className = "col-md-4";
+
+        const now = new Date();
+        const deadline = new Date(post.deadline);
+        const isExpired = post.expired || deadline < now;
+
+        const cardStyle = isExpired
+            ? "opacity: 0.6; filter: grayscale(100%); pointer-events: none;"
+            : "";
+
+        const timerId = `countdown-${post.id}`;
+
+        col.innerHTML = `
+          <a href="/post/${post.id}" class="text-decoration-none text-white">
+             <div class="card h-100 shadow">
+                 ${post.imageUrl ? `<img src="${post.imageUrl}" class="card-img-top" alt="Post Image" style="max-height:200px; object-fit:cover;">` : ''}
+                 <div class="card-body">
+                     <h5 class="card-title">${post.title}</h5>
+                     <p>${post.description}</p>
+                     <p><strong>Highest Bid:</strong> €${post.highestBid}</p>
+                 </div>
+             </div>
+         </a>`;
+        container.appendChild(col);
+
+        if (!isExpired) {
+            startCountdown(timerId, deadline);
+        }
+    });
+}
+
+function startCountdown(elementId, endTime) {
+    const el = document.getElementById(elementId);
+
+    function updateCountdown() {
+        const now = new Date().getTime();
+        const distance = new Date(endTime).getTime() - now;
+
+        if (distance <= 0) {
+            el.innerHTML = "Expired";
+            return;
+        }
+
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        el.innerHTML = `${hours}h ${minutes}m ${seconds}s`;
+        setTimeout(updateCountdown, 1000);
+    }
+
+    updateCountdown();
+}
+
+
+    function openBidModal(postId) {
+        document.getElementById("currentPostId").value = postId;
+        new bootstrap.Modal(document.getElementById('bidModal')).show();
+    }
+
+    async function submitBid() {
+        const postId = document.getElementById("currentPostId").value;
+        const amount = document.getElementById("bidAmount").value;
+
+        const res = await fetch(`/api/posts/${postId}/bid`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ amount: parseFloat(amount), bidderEmail: extractEmailFromToken(token) })
+        });
+
+        if (res.ok) {
+            alert("Bid placed successfully!");
+            document.getElementById("bidAmount").value = "";
+            await loadPosts();
+            bootstrap.Modal.getInstance(document.getElementById('bidModal')).hide();
+        } else {
+            alert("Failed to place bid.");
+        }
+    }
+
+    function extractEmailFromToken(token) {
+        if (!token) return null;
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.sub || payload.email || "";
+    }
+
+    document.getElementById("searchInput").addEventListener("input", (e) => {
+        const term = e.target.value.toLowerCase();
+        const filtered = allPosts.filter(p => p.title.toLowerCase().includes(term));
+        renderPosts(filtered);
+    });
+
+    loadPosts();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account - BidEk</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #1a1a2e; color: #ffffff; font-family: 'Segoe UI', sans-serif; }
+        .navbar { background-color: #16213e; }
+        .navbar-brand, .nav-link, .dropdown-toggle { color: #e0e0e0 !important; }
+        .nav-link:hover, .dropdown-item:hover { color: #00b4d8 !important; }
+        .container { margin-top: 40px; }
+        .card { background-color: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg px-4">
+    <a class="navbar-brand" href="/home">BidEk</a>
+    <div class="collapse navbar-collapse justify-content-end">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" href="/create">Create Post</a>
+            </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown">Profile</a>
+                <ul class="dropdown-menu dropdown-menu-dark">
+                    <li><a class="dropdown-item" href="/my-posts">My Posts</a></li>
+                    <li><a class="dropdown-item" href="/my-bids">My Bids</a></li>
+                    <li><a class="dropdown-item" href="/account">My Account</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="/logout">Logout</a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="card text-white">
+        <h3 class="mb-3">My Account</h3>
+        <p><strong>Email:</strong> <span id="emailDisplay">Loading...</span></p>
+    </div>
+</div>
+
+<script>
+    const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+
+    async function fetchUserInfo() {
+        const res = await fetch('/api/account', {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            document.getElementById("emailDisplay").innerText = data.email;
+        } else {
+            document.getElementById("emailDisplay").innerText = "Unable to load";
+        }
+    }
+
+    fetchUserInfo();
+</script>
+</body>
+</html>
